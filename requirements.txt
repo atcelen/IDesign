@@ -1,0 +1,6 @@
+pyautogen==0.2.0
+networkx
+jsonschema
+matplotlib
+opencv-python==4.8.1.78
+
