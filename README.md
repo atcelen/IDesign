@@ -5,6 +5,7 @@ This is the official Github Repo for [*I-Design: Personalized LLM Interior Desig
 Install the requirements
 ```bash
 conda create -n idesign python=3.9
+conda activate idesign
 pip install -r requirements.txt
 ```
 Create the "OAI_CONFIG_LIST.json" file
