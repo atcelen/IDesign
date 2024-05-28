@@ -7,6 +7,9 @@ Install the requirements
 conda create -n idesign python=3.9
 conda activate idesign
 pip install -r requirements.txt
+conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
+pip install -U git+https://github.com/NVIDIA/MinkowskiEngine
+conda install -c dglteam/label/cu113 dgl
 ```
 Create the "OAI_CONFIG_LIST.json" file
 ```json
@@ -45,3 +48,4 @@ i_design.create_object_clusters(verbose=False)
 i_design.backtrack()
 ```
 ## Results
+![gallery](imgs/gallery.jpg)
