@@ -30,6 +30,7 @@ Create the "OAI_CONFIG_LIST.json" file
 ]
 ```
 ## Inference
+Create the scene graph and allocate coordinate positions
 ```python
 from IDesign import IDesign
 
@@ -46,6 +47,16 @@ i_design.refine_design()
 # Backtracking Algorithm
 i_design.create_object_clusters(verbose=False)
 i_design.backtrack()
+i_design.to_json()
+```
+
+Retrieve the 3D assets from Objaverse using OpenShape
+```bash
+git clone https://huggingface.co/OpenShape/openshape-demo-support
+cd openshape-demo-support
+pip install -e .
+cd ..
+python retrieve.py
 ```
 ## Results
 ![gallery](imgs/gallery.jpg)

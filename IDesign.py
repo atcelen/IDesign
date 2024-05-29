@@ -384,3 +384,8 @@ class IDesign:
                 d += 1
         
         get_visualization(self.scene_graph, self.room_priors)
+    
+    def to_json(self, file_name="scene_graph.json"):
+        # Save the scene graph to a json file
+        with open(file_name, "w") as file:
+            json.dump(self.scene_graph, file, indent=4)

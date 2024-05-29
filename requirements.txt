@@ -4,4 +4,7 @@ jsonschema==4.3.2
 matplotlib
 opencv-python==4.8.1.78
 pydantic==1.10.2
+torch_redstone
+einops
+huggingface_hub
 
