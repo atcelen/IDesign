@@ -249,7 +249,7 @@ class IDesign:
                 print("Invalid name IDs: ", invalid_name_ids)
             new_relationships["children_objects"] = [child for child in new_relationships["children_objects"] if child["name_id"] not in invalid_name_ids]         
 
-            edges, edges_to_flip = clean_and_extract_edges(new_relationships, parent_id)
+            edges, edges_to_flip = clean_and_extract_edges(new_relationships, parent_id, verbose=verbose)
 
             prep_correspondences ={
                 "left of" : "right of",

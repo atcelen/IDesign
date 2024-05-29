@@ -7,5 +7,3 @@ pydantic==1.10.2
 torch_redstone
 einops
 huggingface_hub
-bpy==2.82.1
-
