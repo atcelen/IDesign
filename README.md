@@ -61,5 +61,11 @@ python retrieve.py
 
 Place the assets using the Blender Scripting Module using the script in the *place_in_blender.py* file
 
+## Evaluation
+After creating scene renders in Blender, you can use the GPT-V evaluator to generate grades for evaluation. Fill in the necessary variables denoted with TODO and run the script
+```bash
+python gpt_v_as_evaluator.py
+```
+
 ## Results
 ![gallery](imgs/gallery.jpg)
