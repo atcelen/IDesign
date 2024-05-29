@@ -46,7 +46,7 @@ i_design.correct_design()
 i_design.refine_design()
 # Backtracking Algorithm
 i_design.create_object_clusters(verbose=False)
-i_design.backtrack()
+i_design.backtrack(verbose=True)
 i_design.to_json()
 ```
 
