@@ -58,5 +58,8 @@ pip install -e .
 cd ..
 python retrieve.py
 ```
+
+Place the assets using the Blender Scripting Module using the script in the *place_in_blender.py* file
+
 ## Results
 ![gallery](imgs/gallery.jpg)
