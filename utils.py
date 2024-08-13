@@ -53,6 +53,7 @@ def get_rotation(obj_A, scene_graph):
         "middle of the room" : 0.0,
         "ceiling" : 0.0
     }
+
     if "rotation" in obj_A.keys():
         rot = obj_A["rotation"]["z_angle"]
     elif "facing" in obj_A.keys() and obj_A["facing"] in layout_rot.keys():
@@ -62,7 +63,11 @@ def get_rotation(obj_A, scene_graph):
     else: 
         parents = []
         for x in obj_A["placement"]["objects_in_room"]:
-            p = [element for element in scene_graph if element.get("new_object_id") == x["object_id"]][0]
+            try:
+                p = [element for element in scene_graph if element.get("new_object_id") == x["object_id"]][0]
+            except:
+                print(f"Object {x['object_id']} not found in scene graph!")
+                raise ValueError("Object not found in scene graph!")
             parents.append(p)
         if len(parents) > 0:
             parent = parents[0]
@@ -92,9 +97,23 @@ def get_size_conflicts(G, scene_graph, user_input, room_priors, verbose=False):
 def preprocess_scene_graph(scene_graph):
     # Correct the preposition for objects in the middle of the room
     for obj in scene_graph:
+        if not obj["is_on_the_floor"] and "middle of the room" in [x["layout_element_id"] for x in obj["placement"]["room_layout_elements"]]:
+            #Delete that relationship
+            obj["placement"]["room_layout_elements"] = [x for x in obj["placement"]["room_layout_elements"] if x["layout_element_id"] != "middle of the room"]
         for elem in obj["placement"]["room_layout_elements"]:
-            if elem["preposition"] == "in the corner" and elem["layout_element_id"] == "middle of the room":
+            if elem["preposition"] == "in the corner" and elem["layout_element_id"] in ["middle of the room", "ceiling"]:
                 elem["preposition"] = "on"
+        for elem in obj["placement"]["objects_in_room"]:
+            if elem["object_id"] == "middle of the room":
+                # Delete that relationship
+                obj["placement"]["objects_in_room"] = [x for x in obj["placement"]["objects_in_room"] if x["object_id"] != "middle of the room"]
+            if elem["object_id"] not in [x["new_object_id"] for x in scene_graph]:
+                closest_id = next(iter([x["new_object_id"] for x in scene_graph if elem["object_id"] in x["new_object_id"]]), None)
+                if closest_id is not None:
+                    elem["object_id"] = closest_id
+                else:
+                    print(f"Object {elem['object_id']} not found in scene graph!")
+                    raise ValueError("Object not found in scene graph!")
     return scene_graph
 
 def build_graph(scene_graph):
@@ -135,6 +154,11 @@ def find_room_layout_conflicts(G, scene_graph):
                         different_parent_room_layout = True if p not in parents_room_layout[0] else different_parent_room_layout
                     else:
                         different_parent_room_layout = True if p != parents_room_layout[0] else different_parent_room_layout
+                elif isinstance(p, dict):
+                    if isinstance(parents_room_layout[0], list):
+                        different_parent_room_layout = True if p not in parents_room_layout[0] else different_parent_room_layout
+                    else:
+                        different_parent_room_layout = True if p != parents_room_layout[0] else different_parent_room_layout
             if len(parents_room_layout) > 0 and different_parent_room_layout:
                 # This should be a spatial conflict, if the relationship isn't 'corner'
                 if not all([G[p][node]["weight"]["preposition"] == "in the corner" for p in parents]) and not any([p == "ceiling" for p in parents]):
@@ -142,7 +166,8 @@ def find_room_layout_conflicts(G, scene_graph):
                     conflict_string += "\nObject to reposition: " + str(get_object_from_scene_graph(node, scene_graph))
                     conflicts.append(conflict_string)
                 else:
-                    node_layout[node] = parents_room_layout
+                    # node_layout[node] = parents_room_layout
+                    node_layout[node] = {}
             else:
                 node_layout[node] = parents_room_layout[0]
 
@@ -263,6 +288,8 @@ def check_corner_relationship_impossibilities(G, scene_graph):
                 p_parent = list(G.predecessors(p))
                 corners = [p_p for p_p in p_parent if G[p_p][p]["weight"]["preposition"] == "in the corner"]
                 impossible_preps = []
+                if len(corners) != 2:
+                    continue
                 for p_p in corners:
                     corner_name = corners[0].split('_')[0] + "-" + corners[1].split('_')[0] + " corner"
                     impossible_prep = wall_impossible_preps[p_p]
@@ -335,7 +362,6 @@ def check_impossible_relationships(G, scene_graph):
             parents_raw = list(G.predecessors(node))
             parents = list(filter(lambda x : x not in ROOM_LAYOUT_ELEMENTS, parents_raw))
             children = list(G.successors(node))
-            # print(f"Node: {node}, Parents: {parents}, Children: {children}")
             node_rot = get_rotation(next((x for x in scene_graph if x["new_object_id"] == node), None), scene_graph) 
             # Adjacent child exclusivity
             for p in parents:
@@ -344,7 +370,7 @@ def check_impossible_relationships(G, scene_graph):
                 if prep in directional_preps and adj:
                     idx = directional_preps.index(prep)
                     rotated_idx = int((idx + (node_rot // 90)) % len(directional_preps))
-                    impossible_prep = directional_preps[rotated_idx]
+                    impossible_prep = directional_preps[(rotated_idx + 2) % len(directional_preps)] 
                     for c in children:
                         if G[node][c]["weight"]["preposition"] == impossible_prep and G[node][c]["weight"]["adjacency"]:
                             # print(f"Impossible relationship between {node} and {c} with rotation {node_rot} and relationship {G[node][c]['weight']['preposition']}")
@@ -356,7 +382,11 @@ def check_impossible_relationships(G, scene_graph):
 def get_cluster_size(node, G, scene_graph): 
     # Get the size of the cluster of objects
     node_obj = get_object_from_scene_graph(node, scene_graph)
-    node_obj_rot = get_rotation(node_obj, scene_graph)
+    try:
+        node_obj_rot = get_rotation(node_obj, scene_graph)
+    except:
+        print(f"Node: {node}")
+        raise ValueError("Error in getting the rotation of the object!")
     # Get the outgoing edges
     outgoing_e = list(G.out_edges(node, data=True))
     outgoing_nodes = [edge[1] for edge in outgoing_e]
@@ -410,9 +440,6 @@ def check_size_conflicts(G, scene_graph, user_input, room_priors, verbose=False)
         for node in topological_order_reversed:
             if node not in ROOM_LAYOUT_ELEMENTS:
                 clstr_size, children_objs = get_cluster_size(node, G, scene_graph)
-                print(f"Cluster size for {node}: {clstr_size}")
-                print(f"Children objects: {children_objs}")
-                print("\n")
                 
     # Find cluster size conflicts
     for node in topological_order_reversed:
@@ -696,7 +723,7 @@ def create_empty_image_with_boxes(image_size, boxes):
     cv2.imshow("image", img) 
     key = cv2.waitKey(0)
 
-def get_visualization(scene_graph, room_priors):
+def get_visualization(scene_graph, room_priors=None):
     visual_scene_graph = [
         (
             item["position"]["x"] + 2.0,
@@ -722,7 +749,8 @@ def calculate_overlap(box1, box2):
     z_min = max(box1[4], box2[4])
     z_max = min(box1[5], box2[5])
     
-    if x_min <= x_max and y_min <= y_max and z_min <= z_max:
+    # Check if the boxes overlap with a small tolerance
+    if x_min <= x_max + 1e-03 and y_min <= y_max + 1e-03 and z_min <= z_max + 1e-03:
         return (x_min, x_max, y_min, y_max, z_min, z_max)
     else:
         return None
@@ -888,6 +916,7 @@ def get_no_overlap_reason(obj, positions, cluster_constraint=None, errors={}):
                 overlaps.append((i, i + 1 + j))
     for i, j in overlaps:
         print("No Overlap between: ", i, " ", j)
+        print("Object: ", obj["new_object_id"])
         if scene_graph_edges[i] == "cluster":
             key_j = "layout_element_id" if "layout_element_id" in scene_graph_edges[j].keys() else "object_id"
             key = ("no_overlap", obj["new_object_id"], scene_graph_edges[j][key_j], scene_graph_edges[j]["preposition"], "cluster")
@@ -904,12 +933,12 @@ def get_no_overlap_reason(obj, positions, cluster_constraint=None, errors={}):
     return errors
 
 def place_object(obj, scene_graph, room_dimensions, errors={}, verbose=False):
-    print(f"Input Errors : {errors}")
     if verbose:
         get_visualization(scene_graph)
     if not any(d.get("new_object_id") == obj["new_object_id"] for d in scene_graph):
         return errors
     positions = get_possible_positions(obj["new_object_id"], scene_graph, room_dimensions)
+    print(f"Object: {obj['new_object_id']}")
     print("Possible positions: ", positions)
     abs_length, abs_width = deepcopy(obj["size_in_meters"]["length"]), deepcopy(obj["size_in_meters"]["width"])
     x_neg, x_pos, y_neg, y_pos = obj["cluster"]["constraint_area"]["x_neg"], obj["cluster"]["constraint_area"]["x_pos"], obj["cluster"]["constraint_area"]["y_neg"], obj["cluster"]["constraint_area"]["y_pos"]

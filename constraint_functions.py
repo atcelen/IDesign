@@ -83,10 +83,10 @@ def get_under_contraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensions)
 
     z_min = size_A["height"] / 2
     z_max = pos_B["z"] - size_B["height"] / 2 - size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
-    x_min = pos_B["x"] - size_B["length"] / 2 + size_A["length"] / 2
-    x_max = pos_B["x"] + size_B["length"] / 2 - size_A["length"] / 2
-    y_min = pos_B["y"] - size_B["width"] / 2 + size_A["width"] / 2
-    y_max = pos_B["y"] + size_B["width"] / 2 - size_A["width"] / 2
+    x_min = pos_B["x"] - size_B["length"] / 2 - size_A["length"] / 2
+    x_max = pos_B["x"] + size_B["length"] / 2 + size_A["length"] / 2
+    y_min = pos_B["y"] - size_B["width"] / 2 - size_A["width"] / 2
+    y_max = pos_B["y"] + size_B["width"] / 2 + size_A["width"] / 2
     
     if x_min > x_max:
         x_min, x_max = x_max, x_min
@@ -117,7 +117,7 @@ def get_left_of_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensio
 
 
     z_min = obj_B["position"]["z"] - size_B["height"] / 2 + size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
-    z_max = obj_B["position"]["z"] - size_B["height"] / 2 + size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
+    z_max = room_dimensions[2] - size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
 
     if obj_B["rotation"]["z_angle"] == 0.0:
         x_min = obj_B["position"]["x"] - size_B["length"] / 2 - size_A["length"] / 2 if is_adjacent else size_A["length"] / 2
@@ -149,8 +149,7 @@ def get_left_of_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensio
     x_min = max(x_min, 0.0 + size_A["length"] / 2)
     y_max = max(size_A["width"] / 2, min(y_max, room_dimensions[1] - size_A["width"] / 2))
     y_min = max(y_min, 0.0 + size_A["width"] / 2)
-    z_min = max(size_A["height"] / 2, min(z_max, room_dimensions[2] - size_A["height"] / 2))
-    z_min = max(z_min, 0.0 + size_A["height"] / 2)
+
     
     return (x_min, x_max, y_min, y_max, z_min, z_max)           
 
@@ -165,9 +164,8 @@ def get_right_of_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensi
     if obj_A["rotation"]["z_angle"] in [90.0, 270.0]:
         size_A["length"], size_A["width"] = size_A["width"], size_A["length"]
 
-
     z_min = obj_B["position"]["z"] - size_B["height"] / 2 + size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
-    z_max = obj_B["position"]["z"] - size_B["height"] / 2 + size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
+    z_max = room_dimensions[2] - size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
 
     if obj_B["rotation"]["z_angle"] == 0.0:
         x_min = obj_B["position"]["x"] + size_B["length"] / 2 + size_A["length"] / 2
@@ -216,6 +214,7 @@ def get_in_front_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensi
 
 
     z_min = obj_B["position"]["z"] - size_B["height"] / 2 + size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
+    z_max = room_dimensions[2] - size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
 
     if obj_B["rotation"]["z_angle"] == 0.0:
         x_min = obj_B["position"]["x"] - size_B["length"] / 2 + ((is_adjacent * size_A["length"]) - (not is_adjacent * size_A["length"])) / 2
@@ -247,10 +246,8 @@ def get_in_front_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensi
     x_min = max(x_min, 0.0 + size_A["length"] / 2)
     y_max = max(size_A["width"] / 2, min(y_max, room_dimensions[1] - size_A["width"] / 2))
     y_min = max(y_min, 0.0 + size_A["width"] / 2)
-    z_min = max(size_A["height"] / 2, min(z_min, room_dimensions[2] - size_A["height"] / 2))
-    z_min = max(z_min, 0.0 + size_A["height"] / 2)
     
-    return (x_min, x_max, y_min, y_max, z_min, z_min)
+    return (x_min, x_max, y_min, y_max, z_min, z_max)
     
 def get_behind_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensions):
     """
@@ -264,6 +261,7 @@ def get_behind_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimension
 
 
     z_min = obj_B["position"]["z"] - size_B["height"] / 2 + size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
+    z_max = room_dimensions[2] - size_A["height"] / 2 if not is_on_floor else size_A["height"] / 2
 
     if obj_B["rotation"]["z_angle"] == 0.0:
         x_min = obj_B["position"]["x"] - size_B["length"] / 2 + ((is_adjacent * size_A["length"]) - (not is_adjacent * size_A["length"])) / 2
@@ -294,10 +292,8 @@ def get_behind_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimension
     x_min = max(x_min, 0.0 + size_A["length"] / 2)
     y_max = max(size_A["width"] / 2, min(y_max, room_dimensions[1] - size_A["width"] / 2))
     y_min = max(y_min, 0.0 + size_A["width"] / 2)
-    z_min = max(size_A["height"] / 2, min(z_min, room_dimensions[2] - size_A["height"] / 2))
-    z_min = max(z_min, 0.0 + size_A["height"] / 2)
-    print(x_min, x_max, y_min, y_max, z_min, z_min)
-    return (x_min, x_max, y_min, y_max, z_min, z_min)
+
+    return (x_min, x_max, y_min, y_max, z_min, z_max)
 
 def get_above_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensions):
     """
@@ -314,25 +310,25 @@ def get_above_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensions
     z_max = room_dimensions[2] if not is_on_floor else size_A["height"] / 2
 
     if obj_B["rotation"]["z_angle"] == 0.0:
-        x_min = obj_B["position"]["x"] - size_B["length"] / 2 + size_A["length"] / 2
-        x_max = obj_B["position"]["x"] + size_B["length"] / 2 - size_A["length"] / 2
-        y_min = obj_B["position"]["y"] - size_B["width"] / 2 + size_A["width"] / 2
-        y_max = obj_B["position"]["y"] + size_B["width"] / 2 - size_A["width"] / 2
+        x_min = obj_B["position"]["x"] - size_B["length"] / 2 - size_A["length"] / 2
+        x_max = obj_B["position"]["x"] + size_B["length"] / 2 + size_A["length"] / 2
+        y_min = obj_B["position"]["y"] - size_B["width"] / 2 - size_A["width"] / 2
+        y_max = obj_B["position"]["y"] + size_B["width"] / 2 + size_A["width"] / 2
     elif obj_B["rotation"]["z_angle"] == 90.0:
-        x_min = obj_B["position"]["x"] - size_B["width"] / 2 + size_A["length"] / 2 
-        x_max = obj_B["position"]["x"] + size_B["width"] / 2 - size_A["length"] / 2 
-        y_min = obj_B["position"]["y"] - size_B["length"] / 2 + size_A["width"] / 2 
-        y_max = obj_B["position"]["y"] + size_B["length"] / 2 - size_A["width"] / 2
+        x_min = obj_B["position"]["x"] - size_B["width"] / 2 - size_A["length"] / 2 
+        x_max = obj_B["position"]["x"] + size_B["width"] / 2 + size_A["length"] / 2 
+        y_min = obj_B["position"]["y"] - size_B["length"] / 2 - size_A["width"] / 2 
+        y_max = obj_B["position"]["y"] + size_B["length"] / 2 + size_A["width"] / 2
     elif obj_B["rotation"]["z_angle"] == 180.0:
-        x_min = obj_B["position"]["x"] - size_B["length"] / 2 + size_A["length"] / 2 
-        x_max = obj_B["position"]["x"] + size_B["length"] / 2 - size_A["length"] / 2
-        y_min = obj_B["position"]["y"] - size_B["width"] / 2 + size_A["width"] / 2
-        y_max = obj_B["position"]["y"] + size_B["width"] / 2 - size_A["width"] / 2
+        x_min = obj_B["position"]["x"] - size_B["length"] / 2 - size_A["length"] / 2 
+        x_max = obj_B["position"]["x"] + size_B["length"] / 2 + size_A["length"] / 2
+        y_min = obj_B["position"]["y"] - size_B["width"] / 2 - size_A["width"] / 2
+        y_max = obj_B["position"]["y"] + size_B["width"] / 2 + size_A["width"] / 2
     elif obj_B["rotation"]["z_angle"] == 270.0:
-        x_min = obj_B["position"]["x"] - size_B["width"] / 2 + size_A["length"] / 2 
-        x_max = obj_B["position"]["x"] + size_B["width"] / 2 - size_A["length"] / 2 
-        y_min = obj_B["position"]["y"] - size_B["length"] / 2 + size_A["width"] / 2 
-        y_max = obj_B["position"]["y"] + size_B["length"] / 2 - size_A["width"] / 2
+        x_min = obj_B["position"]["x"] - size_B["width"] / 2 - size_A["length"] / 2 
+        x_max = obj_B["position"]["x"] + size_B["width"] / 2 + size_A["length"] / 2 
+        y_min = obj_B["position"]["y"] - size_B["length"] / 2 - size_A["width"] / 2 
+        y_max = obj_B["position"]["y"] + size_B["length"] / 2 + size_A["width"] / 2
     
     if x_min > x_max:
         x_min, x_max = x_max, x_min

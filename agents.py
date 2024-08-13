@@ -151,7 +151,8 @@ def create_agents(no_of_objects : int):
         Follow the JSON schema below:
         {interior_architect_schema}
 
-        If the quantity of an object is greater than one, you have to find a place for each instance of this object separately!, but give all this information in one list item!
+        If the quantity of an object is greater than one, you have to find a place for each instance of this object separately, but give all this information in one list item!
+        This means the output should have one dictionary for each object, but all their instances (quantity higher than one) should be in the same dictionary!
 
         JSON
         """

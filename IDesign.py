@@ -30,7 +30,7 @@ class IDesign:
         groupchat = GroupChat(
             agents=[user_proxy, interior_designer, interior_architect],
             messages=[],
-            max_round=15
+            max_round=3
         )
 
         chat_with_engineer = ChatWithEngineer(
@@ -60,7 +60,10 @@ class IDesign:
         architect_response = json.loads(groupchat.messages[-1]["content"])
 
         blocks_designer, blocks_architect = extract_list_from_json(designer_response), extract_list_from_json(architect_response)
-        print("Lengths: ", len(blocks_designer), len(blocks_architect))
+        if len(blocks_designer) != len(blocks_architect):
+            print("Lengths: ", len(blocks_designer), len(blocks_architect))
+            raise ValueError("The number of blocks from the designer and architect should be the same! Please generate again.")
+        
         json_data = None
 
         for d_block, a_block in zip(blocks_designer, blocks_architect):
@@ -193,6 +196,8 @@ class IDesign:
             inputs.append((parent_id, prep, objs))
 
         if verbose:
+            if inputs == []:
+                print("No clusters found")
             for parent_id, prep, objs in inputs:
                 print(f"Parent Object : {parent_id}")
                 print(f"Children Objects : {objs}")
@@ -211,7 +216,7 @@ class IDesign:
 
             rot_diffs = [obj_rot - parent_obj_rot for obj_rot in objs_rot]
             direction_check = lambda diff, prep: (diff % 180 == 0 and prep in ["left of", "right of"]) or (diff % 180 != 0 and prep in ["in front", "behind"]) or (diff % 180 != 0 and prep == "on")
-            possibilities_str = "Constraints:\n" + '\n'.join(["\t" + f"Place objects {'behind or in front' if direction_check(diff, prep) else 'left or right'} of {name}!" for name, diff in zip(obj_names, rot_diffs)])
+            possibilities_str = "Constraints:\n" + '\n'.join(["\t" + f"Place objects {'`behind` or `in front`' if direction_check(diff, prep) else '`left of` or `right of`'} of {name}!" for name, diff in zip(obj_names, rot_diffs)])
 
             user_proxy, layout_refiner, json_schema_debugger = get_refiner_agents()
 
@@ -235,6 +240,8 @@ class IDesign:
             )
 
             new_relationships = json.loads(groupchat.messages[-2]["content"])
+            if "items" in new_relationships["children_objects"]:
+                new_relationships = {"children_objects" : new_relationships["children_objects"]["items"]}
             # Check whether the relationships are valid
             invalid_name_ids = []
             for child in new_relationships["children_objects"]:
@@ -248,6 +255,9 @@ class IDesign:
             if verbose:
                 print("Invalid name IDs: ", invalid_name_ids)
             new_relationships["children_objects"] = [child for child in new_relationships["children_objects"] if child["name_id"] not in invalid_name_ids]         
+            
+            if len(new_relationships["children_objects"]) == 0:
+                continue
 
             edges, edges_to_flip = clean_and_extract_edges(new_relationships, parent_id, verbose=verbose)
 
@@ -359,7 +369,7 @@ class IDesign:
                 
                 # Find the object corresponding to the current node
                 obj = next(item for item in scene_graph_wo_layout if item["new_object_id"] == node)
-                errors = place_object(obj, self.scene_graph, self.room_dimensions, errors={})
+                errors = place_object(obj, self.scene_graph, self.room_dimensions, errors={}, verbose=verbose)
                 if verbose:
                     print(f"Errors for {obj['new_object_id']}:", errors)
 
@@ -382,10 +392,10 @@ class IDesign:
                             
             if not error_flag:
                 d += 1
-        
-        get_visualization(self.scene_graph, self.room_priors)
+        if verbose:
+            get_visualization(self.scene_graph, self.room_priors)
     
-    def to_json(self):
+    def to_json(self, filename="scene_graph.json"):
         # Save the scene graph to a json file
-        with open("scene_graph.json", "w") as file:
+        with open(filename, "w") as file:
             json.dump(self.scene_graph, file, indent=4)

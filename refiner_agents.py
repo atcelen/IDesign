@@ -20,7 +20,8 @@ class JSONSchemaAgent(UserProxyAgent):
         preps_objs = ['on', 'left of', 'right of', 'in front', 'behind', 'under', 'above']
 
         json_obj_new = json.loads(message["content"])
-
+        if "items" in json_obj_new["children_objects"]:
+            json_obj_new = {"children_objects" : json_obj_new["children_objects"]["items"]}
         is_success  = False
         try:
             validate(instance=json_obj_new, schema=layout_refiner_schema)
