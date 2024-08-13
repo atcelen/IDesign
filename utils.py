@@ -107,6 +107,7 @@ def preprocess_scene_graph(scene_graph):
             if elem["object_id"] == "middle of the room":
                 # Delete that relationship
                 obj["placement"]["objects_in_room"] = [x for x in obj["placement"]["objects_in_room"] if x["object_id"] != "middle of the room"]
+                continue
             if elem["object_id"] not in [x["new_object_id"] for x in scene_graph]:
                 closest_id = next(iter([x["new_object_id"] for x in scene_graph if elem["object_id"] in x["new_object_id"]]), None)
                 if closest_id is not None:
@@ -579,6 +580,57 @@ def get_object_from_scene_graph(obj_id, scene_graph):
     """
     return next((x for x in scene_graph if x["new_object_id"] == obj_id), None)
 
+def has_one_parent_and_one_child(tree):
+        for node in tree.nodes():
+            if tree.in_degree(node) > 1 or tree.out_degree(node) > 1:
+                return False
+        return True
+
+def find_edges_to_flip(tree):
+        edges_to_flip = []
+        for node in tree.nodes():
+            if tree.in_degree(node) > 1 or tree.out_degree(node) > 1:
+                # If a node has more than one parent or child, find the edges to flip
+                for parent in list(tree.predecessors(node)):
+                    if tree.in_degree(node) > 1:
+                        edges_to_flip.append((parent, node))
+                for child in list(tree.successors(node)):
+                    if tree.out_degree(node) > 1:
+                        edges_to_flip.append((node, child))
+        return edges_to_flip
+
+def flip_edges(tree, root_node, verbose=False):
+    flipped_edges = {}
+    while not has_one_parent_and_one_child(tree):
+        edges_to_flip = find_edges_to_flip(tree)
+        if verbose:
+            print("Edges to flip: ", edges_to_flip)
+        if not edges_to_flip:
+            break  # No more edges to flip
+
+        edge_to_flip = edges_to_flip[0]
+        tree.remove_edge(*edge_to_flip)
+        tree.add_edge(edge_to_flip[1], edge_to_flip[0])
+
+        # After flipping, check if the tree structure is valid
+        if has_one_parent_and_one_child(tree):
+            flipped_edges[edge_to_flip] = True
+        else:
+            # If the structure is still invalid, undo the flip by removing the flipped edge
+            tree.remove_edge(edge_to_flip[1], edge_to_flip[0])
+            tree.add_edge(edge_to_flip[0], edge_to_flip[1])
+    
+    while len(list(nx.simple_cycles(tree))) > 0:
+        cycles = list(nx.simple_cycles(tree))
+        tree.remove_edge(cycles[0][-1], cycles[0][0])
+    
+    # Populate the dictionary for the remaining edges
+    for edge in tree.edges():
+        if edge not in flipped_edges:
+            flipped_edges[edge] = False
+
+    return tree, flipped_edges
+
 def flip_edges_to_binary_tree(graph, root_node, verbose):
     tree = nx.DiGraph(graph)
     flipped_edges = {}
@@ -689,7 +741,8 @@ def clean_and_extract_edges(relationships, parent_id, verbose):
     
     print("Edges remaining: ", dag.edges(data=True))
 
-    binary_tree, flipped_edges = flip_edges_to_binary_tree(dag, list(dag.nodes())[0], verbose)
+    # binary_tree, flipped_edges = flip_edges_to_binary_tree(dag, list(dag.nodes())[0], verbose)
+    binary_tree, flipped_edges = flip_edges(dag, list(dag.nodes())[0], verbose)
     if binary_tree and verbose:
         # Visualize the original graph and the obtained binary tree
         pos_original = nx.spring_layout(dag)

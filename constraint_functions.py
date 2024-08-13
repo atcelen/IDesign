@@ -197,8 +197,6 @@ def get_right_of_constraint(obj_A, obj_B, is_adjacent, is_on_floor, room_dimensi
     x_min = max(x_min, 0.0 + size_A["length"] / 2)
     y_max = max(size_A["width"] / 2, min(y_max, room_dimensions[1] - size_A["width"] / 2))
     y_min = max(y_min, 0.0 + size_A["width"] / 2)
-    z_min = max(size_A["height"] / 2, min(z_max, room_dimensions[2] - size_A["height"] / 2))
-    z_min = max(z_min, 0.0 + size_A["height"] / 2)
     
     return (x_min, x_max, y_min, y_max, z_min, z_max)
 
